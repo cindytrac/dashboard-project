@@ -30,6 +30,15 @@ const septaDatasets = [
     },
 ];
 
+const changedRoutes = new Set([
+    '17', '25', '44', '45', '49', '52', '53', 
+    '57', '60', '61', '64', '79', '105',
+]);
+
+const discontinuedRoutes = new Set([
+    '35', '47M', '62', '78', '80', '89', '106'
+])
+
 async function loadSeptaDataset(dataset) {
     const response = await fetch(dataset.url);
     if (!response.ok) {
@@ -55,15 +64,36 @@ async function loadSeptaDataset(dataset) {
         },
     });
 
+    // pop ups when you click a stop
     map.on('click', layerId, (event) => {
         const feature = event.features?.[0];
-        const name = feature?.properties?.name;
-        if (name) {
-            new Popup()
-                .setLngLat(event.lngLat)
-                .setText(String(name))
-                .addTo(map);
+        const properties = feature?.properties;
+        if (!properties) {
+            return;
         }
+
+        const route = properties[dataset.routeProperty];
+        const stopName = properties.Stop_Name ?? properties.Stop ?? properties.name;
+        const popupContent = document.createElement('div');
+
+        if (stopName) {
+            const name = document.createElement('strong');
+            name.textContent = String(stopName);
+            popupContent.appendChild(name);
+        }
+
+        if (route !== null && route !== undefined) {
+            const routeStatus = document.createElement('p');
+            routeStatus.textContent = changedRoutes.has(String(route))
+                ? `Route ${route} changed`
+                : `Route ${route} stayed the same`;
+            popupContent.appendChild(routeStatus);
+        }
+
+        new Popup()
+            .setLngLat(event.lngLat)
+            .setDOMContent(popupContent)
+            .addTo(map);
     });
     map.on('mouseenter', layerId, () => {
         map.getCanvas().style.cursor = 'pointer';
@@ -100,21 +130,29 @@ function createRouteFilterControl(datasets) {
             select.id = 'route-filter-select';
             select.setAttribute('aria-label', 'Filter bus stops by route');
 
+            const resetButton = document.createElement('button');
+            resetButton.type = 'button';
+            resetButton.id = 'route-reset';
+            resetButton.textContent = 'Reset';
+            resetButton.setAttribute('aria-label', 'Reset filter');
+
+            // sort routes in order
+            const sortedRoutes = [...routeValues]
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
             const allRoutes = document.createElement('option');
             allRoutes.value = '';
             allRoutes.textContent = 'All Routes';
             select.appendChild(allRoutes);
 
-            [...routeValues]
-                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-                .forEach((route) => {
-                    const option = document.createElement('option');
-                    option.value = route;
-                    option.textContent = route;
-                    select.appendChild(option);
-                });
+            sortedRoutes.forEach((route) => {
+                const option = document.createElement('option');
+                option.value = route;
+                option.textContent = route;
+                select.appendChild(option);
+            });
 
-            select.addEventListener('change', () => {
+            const applyRouteFilter = () => {
                 const selectedRoute = select.value;
                 datasets.forEach(({ dataset, layerId }) => {
                     const filter = selectedRoute
@@ -122,9 +160,18 @@ function createRouteFilterControl(datasets) {
                         : null;
                     map.setFilter(layerId, filter);
                 });
+            };
+
+            select.addEventListener('change', () => {
+                applyRouteFilter();
             });
 
-            container.append(label, select);
+            resetButton.addEventListener('click', () => {
+                select.value = '';
+                applyRouteFilter();
+            });
+
+            container.append(label, select, resetButton);
             return container;
         },
         onRemove() {
@@ -194,6 +241,12 @@ function getDataBounds(datasets) {
     return bounds;
 }
 
+// popup to say whether or not the route changed
+function didRouteChange(datasets) {
+    
+
+}
+
 async function displaySeptaDatasets() {
     await new Promise((resolve) => map.once('load', resolve));
 
@@ -218,8 +271,9 @@ async function displaySeptaDatasets() {
         return;
     }
 
+    map.addControl(createRouteFilterControl(loadedDatasets), 'top-left');
     map.addControl(createLayerControl(loadedDatasets), 'top-left');
-    map.addControl(createRouteFilterControl(loadedDatasets), 'top-right');
+    
 
     const bounds = getDataBounds(loadedDatasets);
     if (Number.isFinite(bounds.west)) {

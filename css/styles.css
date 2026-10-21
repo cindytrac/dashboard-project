@@ -1,8 +1,7 @@
 #map { height: 700px; }
 
-
-.button {
-  padding: 6px 8px;
+body {
+  font-family: 'Public Sans', sans-serif;
 }
 
 .page-header {
@@ -11,22 +10,24 @@
 
 .page-header h1 {
   margin: 0;
-  font-family: 'Roboto Condensed', sans-serif;
   font-size: 2rem;
 }
 
 .page-header h2 {
   margin: 0;
-  font-family: 'Roboto Condensed', sans-serif;
   font-size: 1rem;
 }
 
 .route-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
   padding: 6px 8px;
   border-radius: 4px;
   background: #fff;
   box-shadow: 0 1px 5px rgb(0 0 0 / 40%);
-  font: 14px/1.5 Arial, sans-serif;
+  font: 13px 'Public Sans', sans-serif;
 }
 
 .route-filter select {
@@ -34,10 +35,18 @@
   font: inherit;
 }
 
+.route-filter button {
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 4px 8px;
+  font: inherit;
+}
+
 .route-layer-control {
   padding: 8px 10px;
   background: #fff;
-  font: 14px/1.5 Arial, sans-serif;
+  font: 14px/1.5 'Public Sans', sans-serif;
 }
 
 .route-layer-control label {
