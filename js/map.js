@@ -1,28 +1,34 @@
-const map = L.map('map', { preferCanvas: true }).setView([39.9526, -75.1636], 13);
+import { config, Map, MapStyle, Popup } from '@maptiler/sdk';
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 80,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-}).addTo(map);
+if (!window.MAPTILER_API_KEY) {
+    throw new Error('Set a MapTiler API key in js/config.js before loading the map.');
+}
+
+config.apiKey = window.MAPTILER_API_KEY;
+
+const map = new Map({
+    container: document.getElementById('map'),
+    style: MapStyle.BASIC,
+    center: [-75.1636, 39.9526],
+    zoom: 13,
+});
 
 const septaDatasets = [
     {
-        // phase 1 changes
+        id: 'fall-2026',
         name: 'SEPTA Bus Stops - Fall 2026',
         url: 'data/septa_bus_stops_fall_2026.geojson',
         routeProperty: 'Line',
         color: '#e4572e',
     },
     {
-        // before any changes
+        id: 'summer-2026',
         name: 'SEPTA Bus Stops - Summer 2026',
         url: 'data/septa_bus_stops_summer_2026.geojson',
         routeProperty: 'Route',
         color: '#277da1',
     },
 ];
-
-let selectedRoute = '';
 
 async function loadSeptaDataset(dataset) {
     const response = await fetch(dataset.url);
@@ -31,44 +37,46 @@ async function loadSeptaDataset(dataset) {
     }
 
     const data = await response.json();
-    const layer = L.geoJSON(data, {
-        filter: (feature) => (
-            selectedRoute === ''
-            || String(feature.properties?.[dataset.routeProperty]) === selectedRoute
-        ),
-        pointToLayer: (_feature, lat_lng) => L.circleMarker(lat_lng, {
-            radius: 4,
-            color: dataset.color,
-            weight: 0.5,
-            fillColor: dataset.color,
-            fillOpacity: 0.75,
-        }), 
-        onEachFeature: function (feature, layer) {
-        if (feature.properties && feature.properties.name) {
-            layer.bindPopup("<b>" + feature.properties.name + "</b>");
-        }},
-    }).addTo(map);
+    const layerId = `stops-${dataset.id}`;
+    map.addSource(dataset.id, {
+        type: 'geojson',
+        data,
+    });
+    map.addLayer({
+        id: layerId,
+        type: 'circle',
+        source: dataset.id,
+        paint: {
+            'circle-radius': 4,
+            'circle-color': dataset.color,
+            'circle-stroke-color': dataset.color,
+            'circle-stroke-width': 0.5,
+            'circle-opacity': 0.75,
+        },
+    });
 
-
-    return { dataset, data, layer };
-}
-
-function onClick(datasets) {
-    L.geoJSON(datasets, {
-        onEachFeature: function (feature, layer) {
-            // ensure feature has properties before binding
-            if (feature.properties && feature.properties.popupContent) {
-                layer.bindPopup(feature.properties.popupContent);
-            }
+    map.on('click', layerId, (event) => {
+        const feature = event.features?.[0];
+        const name = feature?.properties?.name;
+        if (name) {
+            new Popup()
+                .setLngLat(event.lngLat)
+                .setText(String(name))
+                .addTo(map);
         }
-    }).addTo(map);
+    });
+    map.on('mouseenter', layerId, () => {
+        map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', layerId, () => {
+        map.getCanvas().style.cursor = '';
+    });
+
+    return { dataset, data, layerId };
 }
 
-// drop down to filter routes
-function addRouteFilter(datasets) {
-
+function createRouteFilterControl(datasets) {
     const routeValues = new Set();
-
     datasets.forEach(({ dataset, data }) => {
         data.features.forEach((feature) => {
             const route = feature.properties?.[dataset.routeProperty];
@@ -78,80 +86,148 @@ function addRouteFilter(datasets) {
         });
     });
 
-    const control = L.control({ position: 'topright' });
-    control.onAdd = () => {
-        const container = L.DomUtil.create('div', 'route-filter');
-        const label = L.DomUtil.create('label', '', container);
-        const select = L.DomUtil.create('select', '', container);
+    let container;
+    return {
+        onAdd() {
+            container = document.createElement('div');
+            container.className = 'maplibregl-ctrl maplibregl-ctrl-group route-filter';
 
-        label.htmlFor = 'route-filter-select';
-        label.textContent = 'Route: ';
-        select.id = 'route-filter-select';
-        select.setAttribute('aria-label', 'Filter bus stops by route');
+            const label = document.createElement('label');
+            label.htmlFor = 'route-filter-select';
+            label.textContent = 'Route: ';
 
-        const allRoutes = document.createElement('option');
-        // value of dropdown intially (unselected)
-        allRoutes.value = '';
-        allRoutes.textContent = 'All Routes';
-        select.appendChild(allRoutes);
+            const select = document.createElement('select');
+            select.id = 'route-filter-select';
+            select.setAttribute('aria-label', 'Filter bus stops by route');
 
-        // spread syntax, make sure each route is only shown once (treat as set)
-        // copy set into array so we can sort and do foreach
-        [...routeValues]
-            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-            // create dropdown option for each route, set route when selected
-            .forEach((route) => {
-                const option = document.createElement('option');
-                option.value = route;
-                option.textContent = route;
-                select.appendChild(option);
+            const allRoutes = document.createElement('option');
+            allRoutes.value = '';
+            allRoutes.textContent = 'All Routes';
+            select.appendChild(allRoutes);
+
+            [...routeValues]
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+                .forEach((route) => {
+                    const option = document.createElement('option');
+                    option.value = route;
+                    option.textContent = route;
+                    select.appendChild(option);
+                });
+
+            select.addEventListener('change', () => {
+                const selectedRoute = select.value;
+                datasets.forEach(({ dataset, layerId }) => {
+                    const filter = selectedRoute
+                        ? ['==', ['to-string', ['get', dataset.routeProperty]], selectedRoute]
+                        : null;
+                    map.setFilter(layerId, filter);
+                });
             });
 
-        L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.disableScrollPropagation(container);
-
-        L.DomEvent.on(select, 'change', () => {
-            selectedRoute = select.value;
-            datasets.forEach(({ data, layer }) => {
-                layer.clearLayers();
-                layer.addData(data);
-            });
-        });
-
-        return container;
+            container.append(label, select);
+            return container;
+        },
+        onRemove() {
+            container?.remove();
+        },
     };
-    control.addTo(map);
+}
+
+function createLayerControl(datasets) {
+    let container;
+    return {
+        onAdd() {
+            container = document.createElement('div');
+            container.className = 'maplibregl-ctrl maplibregl-ctrl-group route-layer-control';
+
+            datasets.forEach(({ dataset, layerId }) => {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.addEventListener('change', () => {
+                    map.setLayoutProperty(
+                        layerId,
+                        'visibility',
+                        checkbox.checked ? 'visible' : 'none',
+                    );
+                });
+                label.append(checkbox, document.createTextNode(dataset.name));
+                container.appendChild(label);
+            });
+
+            return container;
+        },
+        onRemove() {
+            container?.remove();
+        },
+    };
+}
+
+function getDataBounds(datasets) {
+    const bounds = {
+        west: Infinity,
+        south: Infinity,
+        east: -Infinity,
+        north: -Infinity,
+    };
+
+    function includeCoordinates(coordinates) {
+        if (typeof coordinates[0] === 'number' && typeof coordinates[1] === 'number') {
+            bounds.west = Math.min(bounds.west, coordinates[0]);
+            bounds.east = Math.max(bounds.east, coordinates[0]);
+            bounds.south = Math.min(bounds.south, coordinates[1]);
+            bounds.north = Math.max(bounds.north, coordinates[1]);
+            return;
+        }
+        coordinates.forEach(includeCoordinates);
+    }
+
+    datasets.forEach(({ data }) => {
+        data.features.forEach((feature) => {
+            if (feature.geometry?.coordinates) {
+                includeCoordinates(feature.geometry.coordinates);
+            }
+        });
+    });
+
+    return bounds;
 }
 
 async function displaySeptaDatasets() {
-    // even if one dataset fails, the other will still render
+    await new Promise((resolve) => map.once('load', resolve));
+
     const results = await Promise.allSettled(
         septaDatasets.map((dataset) => loadSeptaDataset(dataset)),
     );
-    const overlays = {};
     const loadedDatasets = [];
-    const bounds = L.latLngBounds();
 
     results.forEach((result, index) => {
-        const dataset = septaDatasets[index];
         if (result.status === 'fulfilled') {
             loadedDatasets.push(result.value);
-            overlays[dataset.name] = result.value.layer;
-            bounds.extend(result.value.layer.getBounds());
-        
-        } 
-        // throw error if dataset not displayed
-        else {
-            console.error(`Error - Could not display ${dataset.name}:`, result.reason);
+        } else {
+            console.error(
+                `Error - Could not display ${septaDatasets[index].name}:`,
+                result.reason,
+            );
         }
     });
 
-    if (Object.keys(overlays).length > 0) {
-        L.control.layers(null, overlays).addTo(map);
-        addRouteFilter(loadedDatasets);
-        map.fitBounds(bounds.pad(0.05));
+    if (loadedDatasets.length === 0) {
+        console.error('No SEPTA bus stop datasets could be displayed.');
+        return;
+    }
+
+    map.addControl(createLayerControl(loadedDatasets), 'top-left');
+    map.addControl(createRouteFilterControl(loadedDatasets), 'top-right');
+
+    const bounds = getDataBounds(loadedDatasets);
+    if (Number.isFinite(bounds.west)) {
+        map.fitBounds(
+            [[bounds.west, bounds.south], [bounds.east, bounds.north]],
+            { padding: 40, maxZoom: 14 },
+        );
     }
 }
 
 displaySeptaDatasets();
-

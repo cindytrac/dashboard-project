@@ -1,5 +1,26 @@
 #map { height: 700px; }
 
+
+.button {
+  padding: 6px 8px;
+}
+
+.page-header {
+  padding: 16px 24px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 2rem;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 1rem;
+}
+
 .route-filter {
   padding: 6px 8px;
   border-radius: 4px;
@@ -11,4 +32,15 @@
 .route-filter select {
   min-width: 110px;
   font: inherit;
+}
+
+.route-layer-control {
+  padding: 8px 10px;
+  background: #fff;
+  font: 14px/1.5 Arial, sans-serif;
+}
+
+.route-layer-control label {
+  display: block;
+  white-space: nowrap;
 }
