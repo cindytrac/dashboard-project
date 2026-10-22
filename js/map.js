@@ -68,6 +68,14 @@ async function loadSeptaDataset(dataset) {
 
     // pop ups when you click a stop
     map.on('click', layerId, (event) => {
+        if (
+            dataset.id === 'summer-2026'
+            && map.getLayer('stops-fall-2026')
+            && map.queryRenderedFeatures(event.point, { layers: ['stops-fall-2026'] }).length > 0
+        ) {
+            return;
+        }
+
         const feature = event.features?.[0];
         const properties = feature?.properties;
         if (!properties) {
