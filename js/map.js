@@ -15,19 +15,19 @@ const map = new Map({
 
 const septaDatasets = [
     {
-        id: 'fall-2026',
-        name: 'SEPTA Bus Stops - Fall 2026',
-        url: 'data/septa_bus_stops_fall_2026.geojson',
-        routeProperty: 'Line',
+        id: 'summer-2026',
+        name: 'PREVIOUS ROUTES',
+        url: 'data/septa_bus_stops_summer_2026.geojson',
+        routeProperty: 'Route',
         color: '#e4572e',
     },
     {
-        id: 'summer-2026',
-        name: 'SEPTA Bus Stops - Summer 2026',
-        url: 'data/septa_bus_stops_summer_2026.geojson',
-        routeProperty: 'Route',
+        id: 'fall-2026',
+        name: 'CURRENT ROUTES',
+        url: 'data/septa_bus_stops_fall_2026.geojson',
+        routeProperty: 'Line',
         color: '#277da1',
-    },
+    }
 ];
 
 const changedRoutes = new Set([
@@ -38,6 +38,8 @@ const changedRoutes = new Set([
 const discontinuedRoutes = new Set([
     '35', '47M', '62', '78', '80', '89', '106'
 ])
+
+const stopPopups = new Set();
 
 async function loadSeptaDataset(dataset) {
     const response = await fetch(dataset.url);
@@ -82,18 +84,38 @@ async function loadSeptaDataset(dataset) {
             popupContent.appendChild(name);
         }
 
-        if (route !== null && route !== undefined) {
+        if (
+            dataset.id === 'summer-2026'
+            && route !== null
+            && route !== undefined
+            && (discontinuedRoutes.has(String(route)) || changedRoutes.has(String(route)))
+        ) {
             const routeStatus = document.createElement('p');
-            routeStatus.textContent = changedRoutes.has(String(route))
-                ? `Route ${route} changed`
-                : `Route ${route} stayed the same`;
+            routeStatus.textContent = `Route ${route} has changed. This stop is no longer accurate! Navigate to the closest blue-colored stop to catch the ${route}.`;
             popupContent.appendChild(routeStatus);
         }
 
-        new Popup()
+
+        // uncomment to have route status in pop up
+        // if (route !== null && route !== undefined) {
+        //     const routeStatus = document.createElement('p');
+
+        //     if (changedRoutes.has(String(route)))
+        //         routeStatus.textContent = `Route ${route} changed!` 
+        //     else if (discontinuedRoutes.has(String(route)))
+        //         routeStatus.textContent = `Route ${route} was discontinued!`
+        //     else
+        //         routeStatus.textContent = `Route ${route} stayed the same!`
+           
+        //     popupContent.appendChild(routeStatus);
+        // }
+
+        const popup = new Popup()
             .setLngLat(event.lngLat)
             .setDOMContent(popupContent)
             .addTo(map);
+        stopPopups.add(popup);
+        popup.on('close', () => stopPopups.delete(popup));
     });
     map.on('mouseenter', layerId, () => {
         map.getCanvas().style.cursor = 'pointer';
@@ -105,7 +127,7 @@ async function loadSeptaDataset(dataset) {
     return { dataset, data, layerId };
 }
 
-function createRouteFilterControl(datasets) {
+function createRouteFilterControl(datasets, onRouteChange) {
     const routeValues = new Set();
     datasets.forEach(({ dataset, data }) => {
         data.features.forEach((feature) => {
@@ -154,12 +176,14 @@ function createRouteFilterControl(datasets) {
 
             const applyRouteFilter = () => {
                 const selectedRoute = select.value;
+                stopPopups.forEach((popup) => popup.remove());
                 datasets.forEach(({ dataset, layerId }) => {
                     const filter = selectedRoute
                         ? ['==', ['to-string', ['get', dataset.routeProperty]], selectedRoute]
                         : null;
                     map.setFilter(layerId, filter);
                 });
+                onRouteChange(selectedRoute);
             };
 
             select.addEventListener('change', () => {
@@ -180,8 +204,62 @@ function createRouteFilterControl(datasets) {
     };
 }
 
+function createRouteStatusControl() {
+    // state of filter
+    let status;
+    let container;
+    return {
+        control: {
+            onAdd() {
+                container = document.createElement('div');
+                container.className = 'maplibregl-ctrl route-status-control';
+                container.setAttribute('aria-live', 'polite');
+                container.classList.add('status-neutral');
+
+                status = document.createElement('p');
+                status.textContent = 'Select a route to see whether it changed.';
+                container.appendChild(status);
+
+                return container;
+            },
+            onRemove() {
+                status?.parentElement?.remove();
+            },
+        },
+        update(route) {
+            // no route selected
+            if (!status) {
+                return;
+            }
+
+            if (!route) {
+                status.textContent = 'Select a route to see whether it changed.';
+                container.classList.add('status-neutral');
+                container.classList.remove('status-changed', 'status-discontinued', 'status-unchanged');
+            } 
+            else if (changedRoutes.has(route)) {
+                status.textContent = `Route ${route} changed.`;
+                container.classList.add('status-changed');
+                container.classList.remove('status-neutral', 'status-discontinued', 'status-unchanged');
+            }  
+            else if (discontinuedRoutes.has(route)) {
+                status.textContent = `Route ${route} was discontinued.`;
+                container.classList.add('status-discontinued');
+                container.classList.remove('status-neutral', 'status-changed', 'status-unchanged');
+            }
+            else {
+                status.textContent = `Route ${route} stayed the same.`;
+                container.classList.add('status-unchanged');
+                container.classList.remove('status-neutral', 'status-changed', 'status-discontinued');
+            }
+
+        },
+    };
+}
+
 function createLayerControl(datasets) {
     let container;
+    const checkboxes = new globalThis.Map();
     return {
         onAdd() {
             container = document.createElement('div');
@@ -191,7 +269,11 @@ function createLayerControl(datasets) {
                 const label = document.createElement('label');
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.checked = true;
+                checkbox.checked = dataset.id !== 'summer-2026';
+                checkboxes.set(dataset.id, checkbox);
+                if (!checkbox.checked) {
+                    map.setLayoutProperty(layerId, 'visibility', 'none');
+                }
                 checkbox.addEventListener('change', () => {
                     map.setLayoutProperty(
                         layerId,
@@ -208,10 +290,23 @@ function createLayerControl(datasets) {
         onRemove() {
             container?.remove();
         },
+        setPreviousRoutesVisible(visible) {
+            const checkbox = checkboxes.get('summer-2026');
+            if (!checkbox) {
+                return;
+            }
+
+            checkbox.checked = visible;
+            map.setLayoutProperty(
+                'stops-summer-2026',
+                'visibility',
+                visible ? 'visible' : 'none',
+            );
+        },
     };
 }
 
-function getDataBounds(datasets) {
+function getDataBounds(datasets, selectedRoute = '') {
     const bounds = {
         west: Infinity,
         south: Infinity,
@@ -230,8 +325,12 @@ function getDataBounds(datasets) {
         coordinates.forEach(includeCoordinates);
     }
 
-    datasets.forEach(({ data }) => {
+    datasets.forEach(({ dataset, data }) => {
         data.features.forEach((feature) => {
+            if (selectedRoute
+                && String(feature.properties?.[dataset.routeProperty] ?? '') !== selectedRoute) {
+                return;
+            }
             if (feature.geometry?.coordinates) {
                 includeCoordinates(feature.geometry.coordinates);
             }
@@ -241,18 +340,20 @@ function getDataBounds(datasets) {
     return bounds;
 }
 
-// popup to say whether or not the route changed
-function didRouteChange(datasets) {
-    
-
+function fitMapToDatasets(datasets, selectedRoute = '') {
+    const bounds = getDataBounds(datasets, selectedRoute);
+    if (Number.isFinite(bounds.west)) {
+        map.fitBounds(
+            [[bounds.west, bounds.south], [bounds.east, bounds.north]],
+            { padding: 40, maxZoom: selectedRoute ? 15 : 14 },
+        );
+    }
 }
 
 async function displaySeptaDatasets() {
     await new Promise((resolve) => map.once('load', resolve));
 
-    const results = await Promise.allSettled(
-        septaDatasets.map((dataset) => loadSeptaDataset(dataset)),
-    );
+    const results = await Promise.allSettled(septaDatasets.map((dataset) => loadSeptaDataset(dataset)));
     const loadedDatasets = [];
 
     results.forEach((result, index) => {
@@ -266,22 +367,30 @@ async function displaySeptaDatasets() {
         }
     });
 
+    // error check for dataset if empty
     if (loadedDatasets.length === 0) {
         console.error('No SEPTA bus stop datasets could be displayed.');
         return;
     }
 
-    map.addControl(createRouteFilterControl(loadedDatasets), 'top-left');
-    map.addControl(createLayerControl(loadedDatasets), 'top-left');
-    
-
-    const bounds = getDataBounds(loadedDatasets);
-    if (Number.isFinite(bounds.west)) {
-        map.fitBounds(
-            [[bounds.west, bounds.south], [bounds.east, bounds.north]],
-            { padding: 40, maxZoom: 14 },
-        );
+    if (loadedDatasets.some(({ dataset }) => dataset.id === 'fall-2026')) {
+        map.moveLayer('stops-fall-2026');
     }
+
+    const routeStatus = createRouteStatusControl();
+    const layerControl = createLayerControl(loadedDatasets);
+    
+    map.addControl(routeStatus.control, 'top-left');
+    map.addControl(createRouteFilterControl(loadedDatasets, (route) => {
+        routeStatus.update(route);
+        layerControl.setPreviousRoutesVisible(
+            Boolean(route && (changedRoutes.has(route) || discontinuedRoutes.has(route))),
+        );
+        fitMapToDatasets(loadedDatasets, route);
+    }), 'top-left');
+    map.addControl(layerControl, 'top-left');
+
+    fitMapToDatasets(loadedDatasets);
 }
 
 displaySeptaDatasets();

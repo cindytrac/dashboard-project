@@ -23,11 +23,11 @@ body {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  padding: 6px 8px;
+  padding: 18px 20px;
   border-radius: 4px;
   background: #fff;
   box-shadow: 0 1px 5px rgb(0 0 0 / 40%);
-  font: 13px 'Public Sans', sans-serif;
+  font: 15px 'Public Sans', sans-serif;
 }
 
 .route-filter select {
@@ -52,4 +52,45 @@ body {
 .route-layer-control label {
   display: block;
   white-space: nowrap;
+}
+
+.route-status-control {
+  box-sizing: border-box;
+  width: 320px;
+  max-width: calc(100vw - 40px);
+  min-height: 72px;
+  padding: 18px 20px;
+  border: 1px solid #68736d;
+  border-radius: 4px;
+  background: #fff;
+  font: 18px/1.5 'Public Sans', sans-serif;
+}
+
+.route-status-control p {
+  margin: 0;
+}
+
+.route-status-control.status-neutral {
+  background: #fff;
+  color: #222;
+  outline:#222;
+}
+
+.route-status-control.status-changed {
+  background: #fde2e0;
+  color: #81251f;
+  outline:#222;
+}
+
+.route-status-control.status-discontinued {
+  background: #e8e5f5;
+  color: #3d315f;
+  outline:#222;
+}
+
+.route-status-control.status-unchanged {
+  background: #e1f1e8;
+  color: #205638;
+  outline:#222;
+
 }
