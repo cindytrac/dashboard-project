@@ -65,7 +65,6 @@ async function loadSeptaDataset(dataset) {
             'circle-opacity': 0.75,
         },
     });
-
     // pop ups when you click a stop
     map.on('click', layerId, (event) => {
         if (
@@ -92,6 +91,14 @@ async function loadSeptaDataset(dataset) {
             popupContent.appendChild(name);
         }
 
+        // which direction bus is going
+        const direction = properties.Direction;
+        if (direction) {
+            const directionLabel = document.createElement('p');
+            directionLabel.append(`${direction} ${route} Bus`);
+            popupContent.appendChild(directionLabel);
+        }
+
         if (
             dataset.id === 'summer-2026'
             && route !== null
@@ -99,7 +106,7 @@ async function loadSeptaDataset(dataset) {
             && (discontinuedRoutes.has(String(route)) || changedRoutes.has(String(route)))
         ) {
             const routeStatus = document.createElement('p');
-            routeStatus.textContent = `Route ${route} has changed. This stop is no longer accurate! Navigate to the closest blue-colored stop to catch the ${route}.`;
+            routeStatus.textContent = `This stop is no longer accurate! Navigate to the closest ${direction} blue-colored stop to catch the ${route}.`;
             popupContent.appendChild(routeStatus);
         }
 
