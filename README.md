@@ -35,7 +35,7 @@ The JS and CSS code were both linted and site is a11y verified.
 
 ## LIMITATIONS
 - SEPTA datasets are not created equal. Even between the bus stop datasets for Summer 2026 and Fall 2026, the format and columns are different. Datasets with connect routes didn't have the individual bus stop data. This made it a challenge to connect each of the bus stops.
-- Ridership data for the new reroutes are not yet available. 
+- Ridership data for the new reroutes may not be available yet. 
 
 ## EXTENSIONS
 - Comparing ridership data before and after a route change. 
