@@ -36,17 +36,6 @@ body {
   color: #fff;
 }
 
-.breadcrumb ol {
-  display: flex;
-  margin: 0 0 8px;
-  padding: 0;
-  list-style: none;
-}
-
-.breadcrumb li {
-  font-size: 0.875rem;
-}
-
 .title-row {
   display: flex;
   align-items: center;
@@ -70,22 +59,6 @@ body {
   font-size: 1rem;
 }
 
-.site-navigation {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 12px 0 0 60px;
-}
-
-.site-navigation a {
-  color: #fff;
-  font-weight: 600;
-}
-
-.page-footer a {
-  color: inherit;
-}
-
 a:focus-visible,
 button:focus-visible,
 select:focus-visible,
@@ -94,21 +67,10 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
-.site-navigation a:focus-visible {
-  outline-color: #fff;
-}
-
 #map {
   flex: 3 3 auto;
   min-height: 0;
   width: 100%;
-}
-
-.page-footer {
-  flex: 0 0 auto;
-  padding: 8px 24px;
-  background-color: #1f4fa3;
-  color: #fff;
 }
 
 .route-filter {
