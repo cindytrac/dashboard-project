@@ -43,6 +43,30 @@ body {
   font-size: 1rem;
 }
 
+.site-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0 0 60px;
+}
+
+.site-navigation a {
+  color: #fff;
+  font-weight: 600;
+}
+
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 3px solid #000;
+  outline-offset: 2px;
+}
+
+.site-navigation a:focus-visible {
+  outline-color: #fff;
+}
+
 #map {
   flex: 3 3 auto;
   min-height: 0;
