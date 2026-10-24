@@ -3,7 +3,7 @@
 In August of 2026, SEPTA did a significant [system rerouting of their bus routes](https://wwww.septa.org/initiatives/bus/).
 Now that the rerouting has been implemented, it can be difficult to see how individual routes changed. SEPTA's trip planners and other navigation tools generally show current service, not a side-by-side comparison with the previous routes. Riders who rely on familiarity with the city rather than navigation apps may have difficulty finding where a changed route or stop moved.
 
-This tool visualizes previous and current routes side by side, helping riders compare the changes and serving as a snapshot of the former routes.
+This tool visualizes previous and current routes side-by-side, helping riders compare the changes and serving as a snapshot of the former routes.
 
 After more data is collected, this map can be overlapped with ridership data for each stop (which SEPTA does currently collect). This can provide an overview for SEPTA transportation planners to see if moving the stops have led to a change in ridership. 
 
