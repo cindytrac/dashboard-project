@@ -31,6 +31,8 @@ According to the SEPTA site, "arrows and symbols are always on a black backgroun
 
 The color scheme used is reminiscent of the SEPTA logo. 
 
+The JS and CSS code were both linted. 
+
 ## LIMITATIONS
 - SEPTA datasets are not created equal. Even between the bus stop datasets for Summer 2026 and Fall 2026, the format and columns are different. Datasets with connect routes didn't have the individual bus stop data. This made it a challenge to connect each of the bus stops.
 - Ridership data for the new reroutes are not yet available. 
