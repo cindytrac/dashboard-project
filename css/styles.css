@@ -12,6 +12,22 @@ body {
   font-family: 'Public Sans', sans-serif;
 }
 
+.skip-link {
+  position: absolute;
+  z-index: 10;
+  top: 8px;
+  left: 8px;
+  padding: 10px 14px;
+  transform: translateY(-150%);
+  background: #fff;
+  color: #000;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .page-header {
   flex: 0 0 auto;
   padding: 16px 24px;

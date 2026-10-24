@@ -3,7 +3,7 @@
 
 <head>
     <meta charset='utf-8' />
-    <title>SEPTA Bus Changes Visualized</title>
+    <title>SEPTA Bus Route Visualizer</title>
     <meta name='viewport' content='width=device-width, initial-scale=1' />
     <link rel="stylesheet" href="https://cdn.maptiler.com/maptiler-sdk-js/v4.2.0/maptiler-sdk.css">
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,6 +19,8 @@
 
 <body>
 
+    <a class="skip-link" href="#map">Skip to main content</a>
+
     <header class="page-header">
         <div class="title-row">
             <img class="page-logo" src="images/logo.png" alt="">
@@ -32,7 +34,7 @@
         </nav>
     </header>
     
-    <main id="map" aria-label="Philadelphia"></main>
+    <main id="map" aria-label="Philadelphia" tabindex="-1"></main>
     <div id="story"></div>
 
     <script src="js/config.js"></script>
