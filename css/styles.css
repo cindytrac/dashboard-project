@@ -63,7 +63,7 @@ a:focus-visible,
 button:focus-visible,
 select:focus-visible,
 input:focus-visible {
-  outline: 3px solid #000;
+  outline: 2px solid #000;
   outline-offset: 2px;
 }
 
@@ -76,18 +76,18 @@ input:focus-visible {
 .route-filter {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   white-space: nowrap;
-  padding: 18px 20px;
+  padding: 10px 12px;
   border: 1px solid #000;
   border-radius: 4px;
   background: #fff;
   box-shadow: 0 1px 5px rgb(0 0 0 / 40%);
-  font: 15px 'Public Sans', sans-serif;
+  font: 13px 'Public Sans', sans-serif;
 }
 
 .route-filter select {
-  min-width: 110px;
+  min-width: 90px;
   font: inherit;
 }
 
@@ -100,10 +100,10 @@ input:focus-visible {
 }
 
 .route-layer-control {
-  padding: 8px 10px;
+  padding: 5px 7px;
   border: 1px solid #000;
   background: #fff;
-  font: 14px/1.5 'Public Sans', sans-serif;
+  font: 12px/1.35 'Public Sans', sans-serif;
 }
 
 .route-layer-control label {
@@ -111,16 +111,23 @@ input:focus-visible {
   white-space: nowrap;
 }
 
+.route-layer-control input {
+  width: 12px;
+  height: 12px;
+  margin: 3px;
+  vertical-align: middle;
+}
+
 .route-status-control {
   box-sizing: border-box;
-  width: 380px;
+  width: 300px;
   max-width: calc(100vw - 40px);
-  min-height: 88px;
-  padding: 22px 24px;
+  min-height: 60px;
+  padding: 12px 16px;
   border: 1px solid #68736d;
   border-radius: 4px;
   background: #fff;
-  font: 21px/1.5 'Public Sans', sans-serif;
+  font: 16px/1.4 'Public Sans', sans-serif;
 }
 
 .route-status-control p {
